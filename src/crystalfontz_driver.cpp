@@ -1,6 +1,8 @@
 #include "ros/ros.h"
+
 #include "std_msgs/String.h"
 #include "std_msgs/Int8.h"
+#include "std_msgs/Int32.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -11,6 +13,8 @@
 #include "cf_packet.h"
 #include "show_packet.h"
 
+
+#define BACKLIGHT_POWER_TOPIC	"/crystalfontz/backlight_power"
 #define LINE_1_TOPIC			"/crystalfontz/line_1"
 #define LINE_2_TOPIC			"/crystalfontz/line_2"
 #define LINE_3_TOPIC			"/crystalfontz/line_3"
@@ -20,9 +24,26 @@
 #define SERIAL_PORT "/dev/crystalfontz"
 #define BAUD 115200
 
+// Display state variables
+//		All variables are updated by the topics and periodically the dysplay is updated with these values.
 char line1[20], line2[20], line3[20], line4[20];
 bool line1UpToDate = false, line2UpToDate = false, line3UpToDate = false, line4UpToDate = false;
 
+int backlightPower = 50;
+bool backlightPowerUpToDate = false;
+
+void backlightPowerCallback(const std_msgs::Int32::ConstPtr& msg){
+	ROS_INFO("backlightPowerCallback: [%i]", msg->data);
+//	int& blp = msg->data;
+	
+	if(0 <= msg->data && msg->data <= 100){
+		backlightPower = msg->data;
+		backlightPowerUpToDate = false;
+	} else {
+		ROS_ERROR("backlightPowerCallback: received backlight power value: %i\n Acceptable backlight power values are: 0 = off, 1-99 = variable brightness, 100 = on", msg->data);
+	}
+
+}
 void line1Callback(const std_msgs::String::ConstPtr& msg){
 //	ROS_INFO("line1Callback: [%s]", msg->data.c_str());
 	strncpy(line1, msg->data.c_str(), sizeof(line1));
@@ -45,10 +66,11 @@ void line4Callback(const std_msgs::String::ConstPtr& msg){
 }
 
 int main(int argc, char **argv){
-	ros::init(argc, argv, "crystalfontz_display_driver");
+	ros::init(argc, argv, "crystalfontz_driver");
 	
 	ros::NodeHandle n;
 	
+	ros::Subscriber subBacklightPower = n.subscribe(BACKLIGHT_POWER_TOPIC, 1000, backlightPowerCallback);
 	ros::Subscriber subLine1 = n.subscribe(LINE_1_TOPIC, 1000, line1Callback);
 	ros::Subscriber subLine2 = n.subscribe(LINE_2_TOPIC, 1000, line2Callback);
 	ros::Subscriber subLine3 = n.subscribe(LINE_3_TOPIC, 1000, line3Callback);
@@ -66,15 +88,18 @@ int main(int argc, char **argv){
 
 
 	// Initialise the lines with white spaces
+	// TODO from config
 	std::stringstream ssi1, ssi2, ssi3, ssi4;
 	for(auto c : line1) ssi1 << ' ';
 	for(auto c : line2) ssi2 << ' ';
 	for(auto c : line3) ssi3 << ' ';
 	for(auto c : line4) ssi4 << ' ';
 
+
+	// Main loop
 	while (ros::ok()){
-		
-		if(!line1UpToDate || !line2UpToDate || !line3UpToDate || !line4UpToDate){
+				
+		if(!line1UpToDate || !line2UpToDate || !line3UpToDate || !line4UpToDate || !backlightPowerUpToDate){
 			std::stringstream ss1, ss2, ss3, ss4;
 			for(auto c : line1) ss1 << c;
 			for(auto c : line2) ss2 << c;
@@ -82,16 +107,49 @@ int main(int argc, char **argv){
 			for(auto c : line4) ss4 << c;
 
 			ROS_INFO("\
-			\nline1:\t%s\
-			\nline2:\t%s\
-			\nline3:\t%s\
-			\nline4:\t%s", ss1.str().c_str(), ss2.str().c_str(), ss3.str().c_str(), ss4.str().c_str());
+			\nline1:\t\t%s\
+			\nline2:\t\t%s\
+			\nline3:\t\t%s\
+			\nline4:\t\t%s\
+			\nbacklight:\t%i%%",
+			ss1.str().c_str(), 
+			ss2.str().c_str(), 
+			ss3.str().c_str(), 
+			ss4.str().c_str(),
+			backlightPower);
 		}
 
 		//CFA-635 communications protocol only allows
 		//one outstanding packet at a time. Wait for the response
 		//packet from the CFA-635 before sending another
 		//packet.
+		
+		
+		if(!backlightPowerUpToDate){
+			// set LCD And Keypad Backlight
+			outgoing_response.command = 14;
+			outgoing_response.data[0] = backlightPower; //backlight power setting
+			outgoing_response.data_length = 1;
+			send_packet();
+		
+			//wait a maximum of 300ms for the response acknowledging the display update
+			bool timed_out = true;
+			for (int k = 0; k <= 300; k++){
+				if (check_for_packet()){
+					showReceivedPacket();
+					timed_out = false;
+					break;
+				}
+				usleep(1000);
+			}
+			if (timed_out){
+				ROS_ERROR("Timed out waiting for a response for LCD And Keypad Backlight.\n");
+			} else {
+				backlightPowerUpToDate = true;
+			}
+		}
+			
+		
 		
 		if(!line1UpToDate){
 			//Send line 1 to the 635 using command 31

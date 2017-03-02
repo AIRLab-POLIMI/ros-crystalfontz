@@ -134,33 +134,18 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 #add_executable(${PROJECT_NAME}_node src/*)
 
-add_executable(${PROJECT_NAME}_node src/crystalfontz_driver.cpp src/cf_packet.cpp src/serial.cpp src/show_packet.cpp)
-
-
-#file(GLOB_RECURSE crystalfontz_SOURCE 
-#	src/*.cpp
-#	src/*.c
-#)
-
-#add_executable(${PROJECT_NAME}_node ${crystalfontz_SOURCE} )
-
-
-
-
-## Rename C++ executable without prefix
-## The above recommended prefix causes long target names, the following renames the
-## target back to the shorter version for ease of user use
-## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
-set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME driver PREFIX "")
-
-## Add cmake target dependencies of the executable
-## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node
+add_executable(${PROJECT_NAME}_driver_node src/crystalfontz_driver.cpp src/cf_packet.cpp src/serial.cpp src/show_packet.cpp)
+set_target_properties(${PROJECT_NAME}_driver_node PROPERTIES OUTPUT_NAME driver PREFIX "")
+target_link_libraries(${PROJECT_NAME}_driver_node
   ${catkin_LIBRARIES}
 )
+
+add_executable(${PROJECT_NAME}_logic_node src/crystalfontz_logic.cpp)
+set_target_properties(${PROJECT_NAME}_logic_node PROPERTIES OUTPUT_NAME logic PREFIX "")
+target_link_libraries(${PROJECT_NAME}_logic_node
+  ${catkin_LIBRARIES}
+)
+
 
 #############
 ## Install ##

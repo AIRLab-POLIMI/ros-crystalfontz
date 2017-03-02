@@ -13,6 +13,7 @@
 #include  <stdio.h>
 #include  "typedefs.h"
 #include  "serial.h"
+#include  "ros/ros.h"
 
 #define FALSE   0
 #define TRUE    1
@@ -28,7 +29,7 @@ dword ReceiveBufferTail;
 dword ReceiveBufferTailPeek;
 
 //------------------------------------------------------------------------------
-int Serial_Init(char *devname, int baud_rate)
+int Serial_Init(std::string devname, int baud_rate)
   {
   int
     brate;
@@ -36,12 +37,12 @@ int Serial_Init(char *devname, int baud_rate)
     termios term;
 
   //open device
-  handle = open(devname, O_RDWR | O_NOCTTY | O_NONBLOCK);
+  handle = open(devname.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
 
   if(handle <= 0)
     {
-      	printf("Serial_Init:: Open() failed\n");
-	return(1);
+      	ROS_ERROR("Serial_Init:: Open() failed\n");
+		return(1);
     }
 
   //get baud rate constant from numeric value
@@ -54,13 +55,13 @@ int Serial_Init(char *devname, int baud_rate)
       brate=B115200;
       break;
     default:
-      printf("Serial_Init:: Invalid baud rate: %d (must be 19200 or 115200)\n", baud_rate);
+      ROS_ERROR("Serial_Init:: Invalid baud rate: %d (must be 19200 or 115200)\n", baud_rate);
       return(2);
   }
   //get device struct
   if(tcgetattr(handle, &term) != 0)
     {
-    printf("Serial_Init:: tcgetattr() failed\n");
+    ROS_ERROR("Serial_Init:: tcgetattr() failed\n");
     return(3);
     }
 
@@ -88,13 +89,13 @@ int Serial_Init(char *devname, int baud_rate)
   //set new device settings
   if(tcsetattr(handle, TCSANOW, &term)  != 0)
     {
-    printf("Serial_Init:: tcsetattr() failed\n");
+    ROS_ERROR("Serial_Init:: tcsetattr() failed\n");
     return(4);
     }
 
   ReceiveBufferHead=ReceiveBufferTail=0;
 
-  printf("Serial_Init:: success\n");
+  ROS_INFO("Serial_Init:: success\n");
   return(0);
   }
 //------------------------------------------------------------------------------
@@ -113,11 +114,11 @@ void SendByte(unsigned char datum)
   if(handle)
     {
     if((bytes_written=write(handle, &datum, 1)) != 1)
-      printf("SendByte(): system call \"write()\" return error.\n  Asked for %d bytes to be written, but %d bytes reported as written.\n",
+      ROS_ERROR("SendByte(): system call \"write()\" return error.\n  Asked for %d bytes to be written, but %d bytes reported as written.\n",
              1,(int)bytes_written);
     }
   else
-    printf("SendByte(): \"handle\" is null\n");
+    ROS_ERROR("SendByte(): \"handle\" is null\n");
   }
 //------------------------------------------------------------------------------
 void SendData(unsigned char *data,int length)
@@ -129,11 +130,11 @@ void SendData(unsigned char *data,int length)
   if(handle)
     {
     if((bytes_written=write(handle, data, length)) != length)
-      printf("SendData(): system call \"write()\" return error.\n  Asked for %d bytes to be written, but %d bytes reported as written.\n",
+      ROS_ERROR("SendData(): system call \"write()\" return error.\n  Asked for %d bytes to be written, but %d bytes reported as written.\n",
              length,(int)bytes_written);
     }
   else
-    printf("SendData(): \"handle\" is null\n");
+    ROS_ERROR("SendData(): \"handle\" is null\n");
 
   }
 //------------------------------------------------------------------------------

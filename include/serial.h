@@ -4,7 +4,10 @@
 // Copyright 2005, Crystalfontz America, Inc. Written by Brent A. Crosby
 // www.crystalfontz.com, brent@crystalfontz.com
 //============================================================================
-int Serial_Init(char *devname, int baud_rate);
+
+#include  <string>
+
+int Serial_Init(std::string devname, int baud_rate);
 void Uninit_Serial();
 void SendByte(unsigned char datum);
 void Sync_Read_Buffer(void);
