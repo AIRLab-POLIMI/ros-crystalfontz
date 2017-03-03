@@ -75,7 +75,7 @@ int main(int argc, char **argv){
 		pubLine1.publish(line11);
 		
 		std::stringstream ss12;
-		ss12 << "\t\t\t\t\t\t\t\t\t\tL12:" << count1 << "";
+		ss12 << "\t\t\t\t\t\t\t\t\t\tL12:" << count1 << "              ";
 		line12.data = ss12.str();
 		ROS_INFO("%s", line12.data.c_str());
 		pubLine1.publish(line12);

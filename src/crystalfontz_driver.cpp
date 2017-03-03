@@ -255,11 +255,18 @@ int main(int argc, char **argv){
 		ROS_INFO("\"%s\" opened at \"%d\" baud.\n\n", SERIAL_PORT, BAUD);
 
 	
-	// Initialise state variables from config
-	// TODO validate config
-	
+	// Initialise state variables from config	
 	n.param<int>("/crystalfontz_driver/contrast", contrast, 100);
+	if(contrast < 0 || contrast > 254) {
+		ROS_ERROR("Invalid contrast configuration: %i\n Acceptable contrast values are between 0 and 254: 0 = light, 120 = about right, 150 = dark, 151-254 = very dark (may be useful at cold temperatures)", contrast);
+		contrast = 100;
+	}
+	
 	n.param<int>("/crystalfontz_driver/backlight_power", backlightPower, 50);
+	if(backlightPower < 0 || backlightPower > 100) {
+		ROS_ERROR("Invalid backlight power configuration: %i\n Acceptable backlight power values are: 0 = off, 1-99 = variable brightness, 100 = on", backlightPower);
+		backlightPower = 50;
+	}
 	
 	std::string line1Init, line2Init, line3Init, line4Init;
 	n.param<std::string>("/crystalfontz_driver/init_line_1", line1Init, "");
@@ -283,17 +290,38 @@ int main(int argc, char **argv){
 	n.param<float>("/crystalfontz_driver/green_led_3", led3.g, 0.0);
 	n.param<float>("/crystalfontz_driver/red_led_4", led4.r, 0.0);
 	n.param<float>("/crystalfontz_driver/green_led_4", led4.g, 0.0);
+	if(0.0 > led1.r || led1.r > 1.0 && 0.0 > led1.g || led1.g > 1.0) {
+		ROS_ERROR("Invalid led configuration. Acceptable RG values are between 0.0f and 1.0f.");
+		led1.r = 0.0;
+		led1.g = 0.0;
+	}
+	if(0.0 > led2.r || led2.r > 1.0 && 0.0 > led2.g || led2.g > 1.0) {
+		ROS_ERROR("Invalid led configuration. Acceptable RG values are between 0.0f and 1.0f.");
+		led2.r = 0.0;
+		led2.g = 0.0;
+	}
+	if(0.0 > led3.r || led3.r > 1.0 && 0.0 > led3.g || led3.g > 1.0) {
+		ROS_ERROR("Invalid led configuration. Acceptable RG values are between 0.0f and 1.0f.");
+		led3.r = 0.0;
+		led3.g = 0.0;
+	}
+	if(0.0 > led4.r || led4.r > 1.0 && 0.0 > led4.g || led4.g > 1.0) {
+		ROS_ERROR("Invalid led configuration. Acceptable RG values are between 0.0f and 1.0f.");
+		led4.r = 0.0;
+		led4.g = 0.0;
+	}
+	
 	
 	// Main loop
 	while (ros::ok()){
 		
 		
-		if(!line1UpToDate
+		if( !contrastUpToDate
+		 || !backlightPowerUpToDate
+		 || !line1UpToDate
 		 || !line2UpToDate
 		 || !line3UpToDate
 		 || !line4UpToDate
-		 || !backlightPowerUpToDate
-		 || !contrastUpToDate
 		 || !led1UpToDate
 		 || !led2UpToDate
 		 || !led3UpToDate
