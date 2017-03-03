@@ -254,15 +254,36 @@ int main(int argc, char **argv){
 	} else
 		ROS_INFO("\"%s\" opened at \"%d\" baud.\n\n", SERIAL_PORT, BAUD);
 
-
-	// Initialise the lines with white spaces
-	// TODO from config
-	for(auto i = 0; i < sizeof(line1); i++) line1[i] = ' ';
-	for(auto i = 0; i < sizeof(line2); i++) line2[i] = ' ';
-	for(auto i = 0; i < sizeof(line3); i++) line3[i] = ' ';
-	for(auto i = 0; i < sizeof(line4); i++) line4[i] = ' ';
-
-
+	
+	// Initialise state variables from config
+	// TODO validate config
+	
+	n.param<int>("/crystalfontz_driver/contrast", contrast, 100);
+	n.param<int>("/crystalfontz_driver/backlight_power", backlightPower, 50);
+	
+	std::string line1Init, line2Init, line3Init, line4Init;
+	n.param<std::string>("/crystalfontz_driver/init_line_1", line1Init, "");
+	n.param<std::string>("/crystalfontz_driver/init_line_2", line2Init, "");
+	n.param<std::string>("/crystalfontz_driver/init_line_3", line3Init, "");
+	n.param<std::string>("/crystalfontz_driver/init_line_4", line4Init, "");
+	line1Init.resize(sizeof(line1), ' ');
+	line2Init.resize(sizeof(line2), ' ');
+	line3Init.resize(sizeof(line3), ' ');
+	line4Init.resize(sizeof(line4), ' ');
+	for(auto i = 0; i < sizeof(line1); i++) line1[i] = line1Init[i];
+	for(auto i = 0; i < sizeof(line2); i++) line2[i] = line2Init[i];
+	for(auto i = 0; i < sizeof(line3); i++) line3[i] = line3Init[i];
+	for(auto i = 0; i < sizeof(line4); i++) line4[i] = line4Init[i];
+	
+	n.param<float>("/crystalfontz_driver/red_led_1", led1.r, 0.0);
+	n.param<float>("/crystalfontz_driver/green_led_1", led1.g, 0.0);
+	n.param<float>("/crystalfontz_driver/red_led_2", led2.r, 0.0);
+	n.param<float>("/crystalfontz_driver/green_led_2", led2.g, 0.0);
+	n.param<float>("/crystalfontz_driver/red_led_3", led3.r, 0.0);
+	n.param<float>("/crystalfontz_driver/green_led_3", led3.g, 0.0);
+	n.param<float>("/crystalfontz_driver/red_led_4", led4.r, 0.0);
+	n.param<float>("/crystalfontz_driver/green_led_4", led4.g, 0.0);
+	
 	// Main loop
 	while (ros::ok()){
 		

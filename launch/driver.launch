@@ -1,0 +1,13 @@
+<launch>
+	
+	
+	
+	<node
+		name="crystalfontz_driver"
+		pkg="crystalfontz"
+		type="driver"
+		output="screen">
+		<rosparam command="load" file="$(find crystalfontz)/config/default.yaml" />
+	</node>
+	
+</launch>
