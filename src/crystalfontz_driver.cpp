@@ -181,6 +181,51 @@ void led4Callback(const std_msgs::ColorRGBA::ConstPtr& msg){
 	}
 }
 
+
+
+
+// CFA-635 communications protocol only allows
+// one outstanding packet at a time. Wait for the response
+// packet from the CFA-635 before sending another packet.
+void sendPacket(int command, int d1){
+	outgoing_response.command = command;
+	outgoing_response.data[0] = d1;
+	outgoing_response.data_length = 1;
+	send_packet();
+}
+void sendPacket(int command, int d1, int d2){
+	outgoing_response.command = command;
+	outgoing_response.data[0] = d1;
+	outgoing_response.data[1] = d2;
+	outgoing_response.data_length = 2;
+	send_packet();
+}
+void sendPacket(int command, int d1, int d2, char* line){
+	outgoing_response.command = command;
+	outgoing_response.data[0] = d1;
+	outgoing_response.data[1] = d2;
+	memcpy(&outgoing_response.data[2], line, 20); // Hardcoded packet length
+	outgoing_response.data_length = 22;
+	send_packet();
+}
+
+// Waits a maximum of 300ms for a packet (an ack, after sending a command)
+// TODO check the packet is the right ack?
+bool waitForAck(){
+	//wait a maximum of 300ms for the response ack
+	bool timed_out = true;
+	for (int k = 0; k <= 300; k++){
+		if (check_for_packet()){
+			timed_out = false;
+			break;
+		}
+		usleep(1000);
+	}
+	return !timed_out;
+}
+
+
+
 int main(int argc, char **argv){
 	ros::init(argc, argv, "crystalfontz_driver");
 	
@@ -267,349 +312,93 @@ int main(int argc, char **argv){
 			backlightPower);
 		}
 
-		//CFA-635 communications protocol only allows
-		//one outstanding packet at a time. Wait for the response
-		//packet from the CFA-635 before sending another
-		//packet.
-		
-		
-		
 		
 		
 		if(!contrastUpToDate){
-			outgoing_response.command = 13;
-			outgoing_response.data[0] = contrast; //contrast setting
-			outgoing_response.data_length = 1;
-			send_packet();
-		
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-					// TODO check the packet is the right ack?
-//					showReceivedPacket();
-					timed_out = false;
-					break;
-				}
-				usleep(1000);
-			}
-			if (timed_out){
-				ROS_ERROR("Timed out waiting for a response for LCD contrast.\n");
-			} else {
-				contrastUpToDate = true;
-			}
+			sendPacket(13, contrast); // contrast setting
+			if(waitForAck()) contrastUpToDate = true;
+			else ROS_ERROR("Timed out waiting for a response for LCD contrast.\n");
 		}
 		
 		if(!backlightPowerUpToDate){
-			// set LCD And Keypad Backlight
-			outgoing_response.command = 14;
-			outgoing_response.data[0] = backlightPower; //backlight power setting
-			outgoing_response.data_length = 1;
-			send_packet();
-		
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-//					showReceivedPacket();
-					timed_out = false;
-					break;
-				}
-				usleep(1000);
-			}
-			if (timed_out){
-				ROS_ERROR("Timed out waiting for a response for LCD And Keypad Backlight.\n");
-			} else {
-				backlightPowerUpToDate = true;
-			}
+			sendPacket(14, backlightPower); // backlight power setting
+			if(waitForAck()) backlightPowerUpToDate = true;
+			else ROS_ERROR("Timed out waiting for a response for LCD And Keypad Backlight.\n");
 		}
-			
 		
 		
 		if(!line1UpToDate){
-			//Send line 1 to the 635 using command 31
-			outgoing_response.command = 31;
-			outgoing_response.data[0] = 0; //col
-			outgoing_response.data[1] = 0; //row
-			memcpy(&outgoing_response.data[2], line1, 20);
-			outgoing_response.data_length = 22; //the col & row position + the 20 char data length
-			send_packet();
-
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-//					showReceivedPacket();
-					timed_out = false;
-					break;
-				}
-				usleep(1000);
-			}
-			if (timed_out){
-				ROS_ERROR("Timed out waiting for a response on line 1.\n");
-			} else {
-				line1UpToDate = true;
-			}
+			sendPacket(31, 0, 0, line1);
+			if(waitForAck()) line1UpToDate = true;
+			else ROS_ERROR("Timed out waiting for a response on line 1.\n");
 		}
-
 
 		if(!line2UpToDate){
-			//Send line 2 to the 635 using command 31
-			outgoing_response.command = 31;
-			outgoing_response.data[0] = 0; //col
-			outgoing_response.data[1] = 1; //row
-			memcpy(&outgoing_response.data[2], line2, 20);
-			outgoing_response.data_length = 22;
-			send_packet();
-
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out = true;
-			for (int k = 0; k <= 300; k++) {
-				if (check_for_packet()) {
-//					showReceivedPacket();
-					timed_out = false;
-					break;
-				}
-				usleep(1000);
-			}
-			if (timed_out) {
-				ROS_ERROR("Timed out waiting for a response on line 2.\n");
-			} else {
-				line2UpToDate = true;
-			}
+			sendPacket(31, 0, 1, line2);
+			if(waitForAck()) line2UpToDate = true;
+			else ROS_ERROR("Timed out waiting for a response on line 2.\n");
 		}
-		
 
 		if(!line3UpToDate){
-			//Send line 3 to the 635 using command 31
-			outgoing_response.command = 31;
-			outgoing_response.data[0] = 0; //col
-			outgoing_response.data[1] = 2; //row
-			memcpy(&outgoing_response.data[2], line3, 20);
-			outgoing_response.data_length = 22;
-			send_packet();
-
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out = true;
-			for (int k = 0; k <= 300; k++) {
-				if (check_for_packet()) {
-//					showReceivedPacket();
-					timed_out = false;
-					break;
-				}
-				usleep(1000);
-			}
-			if (timed_out) {
-				ROS_ERROR("Timed out waiting for a response on line 3.\n");
-			} else {
-				line3UpToDate = true;
-			}
+			sendPacket(31, 0, 2, line3);
+			if(waitForAck()) line3UpToDate = true;
+			else ROS_ERROR("Timed out waiting for a response on line 3.\n");
 		}
-		
 
 		if(!line4UpToDate){
-			//Send line 4 to the 635 using command 31
-			outgoing_response.command = 31;
-			outgoing_response.data[0] = 0; //col
-			outgoing_response.data[1] = 3; //row
-			memcpy(&outgoing_response.data[2], line4, 20);
-			outgoing_response.data_length = 22;
-			send_packet();
-
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out = true;
-			for (int k = 0; k <= 300; k++) {
-				if (check_for_packet()) {
-//					showReceivedPacket();
-					timed_out = false;
-					break;
-				}
-				usleep(1000);
-			}
-			if (timed_out) {
-				ROS_ERROR("Timed out waiting for a response on line 4.\n");
-			} else {
-				line4UpToDate = true;
-			}
+			sendPacket(31, 0, 3, line4);
+			if(waitForAck()) line4UpToDate = true;
+			else ROS_ERROR("Timed out waiting for a response on line 4.\n");
 		}
 		
 		
 		if(!led1UpToDate){
-			outgoing_response.command = 34;
-			outgoing_response.data[0] = 12; //red led 1
-			outgoing_response.data[1] = (int)(led1.r*100); //led intensity 0-100
-			outgoing_response.data_length = 2;
-			send_packet();
-		
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out1 = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-//					showReceivedPacket();
-					timed_out1 = false;
-					break;
-				}
-				usleep(1000);
-			}
+			sendPacket(34, 12, (int)(led1.r*100)); // red led 1
+			bool timed_out1 = !waitForAck();
 			
-			outgoing_response.command = 34;
-			outgoing_response.data[0] = 11; //green led 1
-			outgoing_response.data[1] = (int)(led1.r*100); //led intensity 0-100
-			outgoing_response.data_length = 2;
-			send_packet();
-		
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out2 = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-//					showReceivedPacket();
-					timed_out2 = false;
-					break;
-				}
-				usleep(1000);
-			}
+			sendPacket(34, 11, (int)(led1.g*100)); // green led 1
+			bool timed_out2 = !waitForAck();			
 			
-			
-			if (timed_out1 || timed_out2){
-				ROS_ERROR("Timed out waiting for a response for led 1.\n");
-			} else {
-				led1UpToDate = true;
-			}
+			if (timed_out1 || timed_out2) ROS_ERROR("Timed out waiting for a response for led 1.\n");
+			else led1UpToDate = true;
 		}
 		
 		if(!led2UpToDate){
-			outgoing_response.command = 34;
-			outgoing_response.data[0] = 10; //red led 2
-			outgoing_response.data[1] = (int)(led2.r*100); //led intensity 0-100
-			outgoing_response.data_length = 2;
-			send_packet();
-		
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out1 = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-//					showReceivedPacket();
-					timed_out1 = false;
-					break;
-				}
-				usleep(1000);
-			}
+			sendPacket(34, 10, (int)(led2.r*100)); // red led 2
+			bool timed_out1 = !waitForAck();
 			
-			outgoing_response.command = 34;
-			outgoing_response.data[0] = 9; //green led 2
-			outgoing_response.data[1] = (int)(led2.r*100); //led intensity 0-100
-			outgoing_response.data_length = 2;
-			send_packet();
-		
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out2 = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-//					showReceivedPacket();
-					timed_out2 = false;
-					break;
-				}
-				usleep(1000);
-			}
+			sendPacket(34, 9, (int)(led2.g*100)); // green led 2
+			bool timed_out2 = !waitForAck();
 			
-			
-			if (timed_out1 || timed_out2){
-				ROS_ERROR("Timed out waiting for a response for led 2.\n");
-			} else {
-				led2UpToDate = true;
-			}
+			if (timed_out1 || timed_out2) ROS_ERROR("Timed out waiting for a response for led 2.\n");
+			else led2UpToDate = true;
 		}
 		
 		if(!led3UpToDate){
-			outgoing_response.command = 34;
-			outgoing_response.data[0] = 8; //red led 3
-			outgoing_response.data[1] = (int)(led3.r*100); //led intensity 0-100
-			outgoing_response.data_length = 2;
-			send_packet();
-		
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out1 = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-//					showReceivedPacket();
-					timed_out1 = false;
-					break;
-				}
-				usleep(1000);
-			}
+			sendPacket(34, 8, (int)(led3.r*100)); // red led 3
+			bool timed_out1 = !waitForAck();
 			
-			outgoing_response.command = 34;
-			outgoing_response.data[0] = 7; //green led 3
-			outgoing_response.data[1] = (int)(led3.r*100); //led intensity 0-100
-			outgoing_response.data_length = 2;
-			send_packet();
-		
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out2 = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-//					showReceivedPacket();
-					timed_out2 = false;
-					break;
-				}
-				usleep(1000);
-			}
+			sendPacket(34, 7, (int)(led3.g*100)); // green led 3
+			bool timed_out2 = !waitForAck();
 			
-			
-			if (timed_out1 || timed_out2){
-				ROS_ERROR("Timed out waiting for a response for led 3.\n");
-			} else {
-				led3UpToDate = true;
-			}
+			if (timed_out1 || timed_out2) ROS_ERROR("Timed out waiting for a response for led 3.\n");
+			else led3UpToDate = true;
 		}
 		
 		if(!led4UpToDate){
-			outgoing_response.command = 34;
-			outgoing_response.data[0] = 6; //red led 4
-			outgoing_response.data[1] = (int)(led4.r*100); //led intensity 0-100
-			outgoing_response.data_length = 2;
-			send_packet();
-		
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out1 = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-//					showReceivedPacket();
-					timed_out1 = false;
-					break;
-				}
-				usleep(1000);
-			}
+			sendPacket(34, 6, (int)(led4.r*100)); // red led 4
+			bool timed_out1 = !waitForAck();
 			
-			outgoing_response.command = 34;
-			outgoing_response.data[0] = 5; //green led 4
-			outgoing_response.data[1] = (int)(led4.r*100); //led intensity 0-100
-			outgoing_response.data_length = 2;
-			send_packet();
-		
-			//wait a maximum of 300ms for the response acknowledging the display update
-			bool timed_out2 = true;
-			for (int k = 0; k <= 300; k++){
-				if (check_for_packet()){
-//					showReceivedPacket();
-					timed_out2 = false;
-					break;
-				}
-				usleep(1000);
-			}
+			sendPacket(34, 5, (int)(led4.g*100)); // green led 4
+			bool timed_out2 = !waitForAck();
 			
-			
-			if (timed_out1 || timed_out2){
-				ROS_ERROR("Timed out waiting for a response for led 4.\n");
-			} else {
-				led4UpToDate = true;
-			}
+			if (timed_out1 || timed_out2) ROS_ERROR("Timed out waiting for a response for led 4.\n");
+			else led4UpToDate = true;
 		}
 		
 		
 		if (check_for_packet()) {
 			if(receivedKeyActivity()) {
-				
 				std_msgs::Int8 keyActivity;
 				keyActivity.data = getReceivedKeyActivity();
 				pubKeyActivity.publish(keyActivity);
