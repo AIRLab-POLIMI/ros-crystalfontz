@@ -187,6 +187,11 @@ void led4Callback(const std_msgs::ColorRGBA::ConstPtr& msg){
 // CFA-635 communications protocol only allows
 // one outstanding packet at a time. Wait for the response
 // packet from the CFA-635 before sending another packet.
+void sendPacket(int command){
+	outgoing_response.command = command;
+	outgoing_response.data_length = 0;
+	send_packet();
+}
 void sendPacket(int command, int d1){
 	outgoing_response.command = command;
 	outgoing_response.data[0] = d1;
@@ -249,8 +254,7 @@ int main(int argc, char **argv){
 	ros::Rate loop_rate(100);
 
 	if (Serial_Init(SERIAL_PORT, BAUD)){
-		ROS_ERROR("Could not open port \"%s\" at \"%d\" baud.\n", SERIAL_PORT, BAUD);
-		return (1);
+		ROS_ERROR("Can not not open port \"%s\" at \"%d\" baud.", SERIAL_PORT, BAUD);
 	} else
 		ROS_INFO("\"%s\" opened at \"%d\" baud.\n\n", SERIAL_PORT, BAUD);
 
@@ -315,6 +319,18 @@ int main(int argc, char **argv){
 	// Main loop
 	while (ros::ok()){
 		
+		sendPacket(0);
+		if(!waitForAck()) {
+			ROS_INFO("Timed out waiting for the ping response. Trying to reset serial connection...");
+			
+			Uninit_Serial();
+			if (Serial_Init(SERIAL_PORT, BAUD)){
+				ROS_INFO("Can not open port \"%s\" at \"%d\" baud.", SERIAL_PORT, BAUD);
+			} else
+				ROS_INFO("\"%s\" opened at \"%d\" baud.\n\n", SERIAL_PORT, BAUD);
+			
+			continue;
+		}
 		
 		if( !contrastUpToDate
 		 || !backlightPowerUpToDate

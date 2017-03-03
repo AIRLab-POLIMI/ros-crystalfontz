@@ -41,7 +41,7 @@ int Serial_Init(std::string devname, int baud_rate)
 
   if(handle <= 0)
     {
-      	ROS_ERROR("Serial_Init:: Open() failed\n");
+//		ROS_INFO("Serial_Init:: Open() failed\n");
 		return(1);
     }
 
@@ -95,7 +95,7 @@ int Serial_Init(std::string devname, int baud_rate)
 
   ReceiveBufferHead=ReceiveBufferTail=0;
 
-  ROS_INFO("Serial_Init:: success\n");
+//  ROS_INFO("Serial_Init:: success");
   return(0);
   }
 //------------------------------------------------------------------------------
@@ -129,9 +129,10 @@ void SendData(unsigned char *data,int length)
 
   if(handle)
     {
-    if((bytes_written=write(handle, data, length)) != length)
-      ROS_ERROR("SendData(): system call \"write()\" return error.\n  Asked for %d bytes to be written, but %d bytes reported as written.\n",
-             length,(int)bytes_written);
+      if((bytes_written=write(handle, data, length)) != length)
+      {
+//      ROS_INFO("SendData(): system call \"write()\" return error.\n  Asked for %d bytes to be written, but %d bytes reported as written.", length,(int)bytes_written);    
+      }
     }
   else
     ROS_ERROR("SendData(): \"handle\" is null\n");
