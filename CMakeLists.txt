@@ -146,6 +146,11 @@ target_link_libraries(${PROJECT_NAME}_logic_node
   ${catkin_LIBRARIES}
 )
 
+add_executable(${PROJECT_NAME}_logic_test_node src/crystalfontz_logic_test.cpp)
+set_target_properties(${PROJECT_NAME}_logic_test_node PROPERTIES OUTPUT_NAME test PREFIX "")
+target_link_libraries(${PROJECT_NAME}_logic_test_node
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
