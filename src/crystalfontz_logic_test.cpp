@@ -69,7 +69,7 @@ int main(int argc, char **argv){
 		pubBacklightPower.publish(backLightTestMsg);
 		
 		std::stringstream ss11;
-		ss11 << "L11:" << count1 << "";
+		ss11 << "L11:" << count1 << "\t\t\t\t\t\t\t\t\t\t";
 		line11.data = ss11.str();
 		ROS_INFO("%s", line11.data.c_str());
 		pubLine1.publish(line11);

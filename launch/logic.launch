@@ -1,0 +1,11 @@
+<launch>
+	
+	<node
+		name="crystalfontz_logic"
+		pkg="crystalfontz"
+		type="logic"
+		output="screen">
+		<rosparam command="load" file="$(find crystalfontz)/config/logic_default.yaml" />
+	</node>
+	
+</launch>

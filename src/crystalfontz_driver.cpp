@@ -68,7 +68,7 @@ void backlightPowerCallback(const std_msgs::Int32::ConstPtr& msg){
 void line1Callback(const std_msgs::String::ConstPtr& msg){
 //	ROS_INFO("line1Callback: [%s]", msg->data.c_str());
 	std::string s = msg->data;
-	s.resize(sizeof(line1), '\t');
+	s.resize(sizeof(line1), ' ');
 	
 	for(std::string::size_type i = 0; i < s.size() && i < sizeof(line1); i++)
     	if(s[i] != '\t')
@@ -80,7 +80,7 @@ void line1Callback(const std_msgs::String::ConstPtr& msg){
 void line2Callback(const std_msgs::String::ConstPtr& msg){
 //	ROS_INFO("line2Callback: [%s]", msg->data.c_str());
 	std::string s = msg->data;
-	s.resize(sizeof(line2), '\t');
+	s.resize(sizeof(line2), ' ');
 	
 	for(std::string::size_type i = 0; i < s.size() && i < sizeof(line2); i++)
     	if(s[i] != '\t')
@@ -92,7 +92,7 @@ void line2Callback(const std_msgs::String::ConstPtr& msg){
 void line3Callback(const std_msgs::String::ConstPtr& msg){
 //	ROS_INFO("line3Callback: [%s]", msg->data.c_str());
 	std::string s = msg->data;
-	s.resize(sizeof(line3), '\t');
+	s.resize(sizeof(line3), ' ');
 	
 	for(std::string::size_type i = 0; i < s.size() && i < sizeof(line3); i++)
     	if(s[i] != '\t')
@@ -104,7 +104,7 @@ void line3Callback(const std_msgs::String::ConstPtr& msg){
 void line4Callback(const std_msgs::String::ConstPtr& msg){
 //	ROS_INFO("line4Callback: [%s]", msg->data.c_str());
 	std::string s = msg->data;
-	s.resize(sizeof(line4), '\t');
+	s.resize(sizeof(line4), ' ');
 	
 	for(std::string::size_type i = 0; i < s.size() && i < sizeof(line4); i++)
     	if(s[i] != '\t')
@@ -251,7 +251,7 @@ int main(int argc, char **argv){
 	
 	ros::Publisher pubKeyActivity = n.advertise<std_msgs::Int8>(KEY_ACTIVITY_TOPIC, 1000);
 
-	ros::Rate loop_rate(100);
+	ros::Rate loop_rate(10);
 
 	if (Serial_Init(SERIAL_PORT, BAUD)){
 		ROS_ERROR("Can not not open port \"%s\" at \"%d\" baud.", SERIAL_PORT, BAUD);
