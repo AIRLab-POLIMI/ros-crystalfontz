@@ -7,6 +7,7 @@
 #include "typedefs.h"
 #include "serial.h"
 #include "cf_packet.h"
+#include  "ros/ros.h"
 //------------------------------------------------------------------------------
 word get_crc(ubyte *bufptr,word len,word seed)
   {
@@ -59,6 +60,8 @@ word get_crc(ubyte *bufptr,word len,word seed)
 COMMAND_PACKET
   incoming_command;
 COMMAND_PACKET
+  incoming_ack;
+COMMAND_PACKET
   outgoing_response;
 //============================================================================
 //                              send_packet()
@@ -93,58 +96,87 @@ void send_packet(void)
 // is not it will return 0. incoming_packet may get partially filled with
 // garbage if there is not a valid packet available.
 //----------------------------------------------------------------------------
-ubyte check_for_packet(void)
-  {
-  Sync_Read_Buffer();
-  ubyte
-    i;
-  //First off, there must be at least 4 bytes available in the input stream
-  //for there to be a valid command in it (command, length, no data, CRC).
-  if((i=BytesAvail())<4)
-    return(0);
-  //The "peek" stuff allows us to look into the RS-232 buffer without
-  //removing the data.
-  Sync_Peek_Pointer();
-  //Only commands 0 through MAX_COMMAND are valid.
-  if(MAX_COMMAND<(0x3F&(incoming_command.command=PeekByte())))
-    {
-    //Throw out one byte of garbage. Next pass through should re-sync.
-    GetByte();
-    return(0);
-    }
-  //There is a valid command byte. Get the data_length. The data length
-  //must be within reason.
-  if(MAX_DATA_LENGTH<(incoming_command.data_length=PeekByte()))
-    {
-    //Throw out one byte of garbage. Next pass through should re-sync.
-    GetByte();
-    return(0);
-    }
-  //Now there must be at least incoming_command.data_length+sizeof(CRC) bytes
-  //still available for us to continue.
-  if((int)PeekBytesAvail()<(incoming_command.data_length+2))
-    //It looked like a valid start of a packet, but it does not look
-    //like the complete packet has been received yet.
-    return(0);
-  //There is enough data to make a packet. Transfer over the data.
-  for(i=0;i<incoming_command.data_length;i++)
-    incoming_command.data[i]=PeekByte();
-  //Now move over the CRC.
-  incoming_command.CRC.as_bytes[0]=PeekByte();
-  incoming_command.CRC.as_bytes[1]=PeekByte();
-  //Now check the CRC.
-  if(incoming_command.CRC.as_word==
-     get_crc((ubyte *)&incoming_command,incoming_command.data_length+2,0xFFFF))
-    {
-    //This is a good packet. I'll be horn swaggled. Remove the packet
-    //from the serial buffer.
-    AcceptPeekedData();
-    //Let our caller know that incoming_command has good stuff in it.
-    return(1);
-    }
-  //The CRC did not match. Toss out one byte of garbage. Next pass through
-  //should re-sync.
-  GetByte();
-  return(0);
-  }
+
+
+ubyte check_for_packet(void) {
+		
+	Sync_Read_Buffer();
+	ubyte i;
+	// First off, there must be at least 4 bytes available in the input stream
+	// for there to be a valid command in it (command, length, no data, CRC).
+	if((i = BytesAvail()) < 4) return 0;
+	
+	// The "peek" stuff allows us to look into the RS-232 buffer without
+	// removing the data.
+	Sync_Peek_Pointer();
+	
+	ubyte command = PeekByte();
+	bool isAck = 0x40 <= command && command < 0x80;
+	
+	COMMAND_PACKET* incoming_packet;
+	
+	if(isAck) incoming_packet = &incoming_ack;
+	else incoming_packet = &incoming_command;
+	
+	incoming_packet->command = command;
+	//ROS_INFO("check_for_packet:  incoming_packet->command = %i", incoming_packet->command);
+	
+	// Only commands 0 through MAX_COMMAND are valid.
+	if(MAX_COMMAND < (0x3F & (incoming_packet->command))) {
+		// Throw out one byte of garbage. Next pass through should re-sync.
+		GetByte();
+		return 0;
+	}
+	
+	// There is a valid command byte. Get the data_length. The data length
+	// must be within reason.
+	if(MAX_DATA_LENGTH < (incoming_packet->data_length = PeekByte())) {
+		// Throw out one byte of garbage. Next pass through should re-sync.
+		GetByte();
+		return 0;
+	}
+	//ROS_INFO("check_for_packet:  incoming_packet->data_length = %i", incoming_packet->data_length);
+	
+	// Now there must be at least incoming_packet->data_length+sizeof(CRC) bytes
+	// still available for us to continue.
+	if((int)PeekBytesAvail() < (incoming_packet->data_length + 2)) {
+		
+		// It looked like a valid start of a packet, but it does not look
+		// like the complete packet has been received yet.
+		return 0;
+	}
+	
+	// There is enough data to make a packet. Transfer over the data.
+	for(i = 0; i < incoming_packet->data_length; i++)
+		incoming_packet->data[i] = PeekByte();
+	
+	// Now move over the CRC.
+	incoming_packet->CRC.as_bytes[0] = PeekByte();
+	incoming_packet->CRC.as_bytes[1] = PeekByte();
+	
+	// Now check the CRC.
+	if(incoming_packet->CRC.as_word ==
+			get_crc((ubyte *) & *incoming_packet,
+			incoming_packet->data_length + 2, 0xFFFF)) {
+		// This is a good packet. I'll be horn swaggled. Remove the packet
+		// from the serial buffer.
+		//ROS_INFO("check_for_packet: accepted %i", incoming_packet->command);
+		AcceptPeekedData();
+		
+		// Let our caller know that incoming_packet has good stuff in it.
+		return 1;
+	}
+	
+	//The CRC did not match. Toss out one byte of garbage. Next pass through
+	//should re-sync.
+	GetByte();
+	return 0;
+}
+  
+  
+  
+  
+  
+  
+  
 //============================================================================

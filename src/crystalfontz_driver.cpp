@@ -28,6 +28,9 @@
 #define LED_4_TOPIC				"/crystalfontz/led_4"
 #define KEY_ACTIVITY_TOPIC		"/crystalfontz/key_activity"
 
+#define CLEAR_CONSOLE true
+#define LOOP_RATE 100
+
 #define SERIAL_PORT "/dev/crystalfontz"
 #define BAUD 115200
 
@@ -215,9 +218,7 @@ void sendPacket(int command, int d1, int d2, char* line){
 }
 
 // Waits a maximum of 300ms for a packet (an ack, after sending a command)
-// TODO check the packet is the right ack?
 bool waitForAck(){
-	//wait a maximum of 300ms for the response ack
 	bool timed_out = true;
 	for (int k = 0; k <= 300; k++){
 		if (check_for_packet()){
@@ -251,7 +252,7 @@ int main(int argc, char **argv){
 	
 	ros::Publisher pubKeyActivity = n.advertise<std_msgs::Int8>(KEY_ACTIVITY_TOPIC, 1000);
 
-	ros::Rate loop_rate(10);
+	ros::Rate loop_rate(LOOP_RATE);
 
 	if (Serial_Init(SERIAL_PORT, BAUD)){
 		ROS_ERROR("Can not not open port \"%s\" at \"%d\" baud.", SERIAL_PORT, BAUD);
@@ -326,8 +327,19 @@ int main(int argc, char **argv){
 			Uninit_Serial();
 			if (Serial_Init(SERIAL_PORT, BAUD)){
 				ROS_INFO("Can not open port \"%s\" at \"%d\" baud.", SERIAL_PORT, BAUD);
-			} else
+			} else {
 				ROS_INFO("\"%s\" opened at \"%d\" baud.\n\n", SERIAL_PORT, BAUD);
+				contrastUpToDate = false;
+		 		backlightPowerUpToDate = false;
+		 		line1UpToDate = false;
+		 		line2UpToDate = false;
+		 		line3UpToDate = false;
+		 		line4UpToDate = false;
+		 		led1UpToDate = false;
+		 		led2UpToDate = false;
+		 		led3UpToDate = false;
+		 		led4UpToDate = false;
+			}
 			
 			continue;
 		}
@@ -344,7 +356,7 @@ int main(int argc, char **argv){
 		 || !led4UpToDate){
 		 	
 		 	// CLEAR CONSOLE
-			std::system("clear");
+			if(CLEAR_CONSOLE) std::system("clear");
 			
 			std::stringstream ss1, ss2, ss3, ss4;
 			for(auto c : line1) ss1 << c;
@@ -382,38 +394,38 @@ int main(int argc, char **argv){
 		if(!contrastUpToDate){
 			sendPacket(13, contrast); // contrast setting
 			if(waitForAck()) contrastUpToDate = true;
-			else ROS_ERROR("Timed out waiting for a response for LCD contrast.\n");
+			else continue; // Timed out waiting for a response for LCD contrast.
 		}
 		
 		if(!backlightPowerUpToDate){
 			sendPacket(14, backlightPower); // backlight power setting
 			if(waitForAck()) backlightPowerUpToDate = true;
-			else ROS_ERROR("Timed out waiting for a response for LCD And Keypad Backlight.\n");
+			else continue; // Timed out waiting for a response for LCD And Keypad Backlight.
 		}
 		
 		
 		if(!line1UpToDate){
 			sendPacket(31, 0, 0, line1);
 			if(waitForAck()) line1UpToDate = true;
-			else ROS_ERROR("Timed out waiting for a response on line 1.\n");
+			else continue; // Timed out waiting for a response on line 1.
 		}
 
 		if(!line2UpToDate){
 			sendPacket(31, 0, 1, line2);
 			if(waitForAck()) line2UpToDate = true;
-			else ROS_ERROR("Timed out waiting for a response on line 2.\n");
+			else continue; // Timed out waiting for a response on line 2.
 		}
 
 		if(!line3UpToDate){
 			sendPacket(31, 0, 2, line3);
 			if(waitForAck()) line3UpToDate = true;
-			else ROS_ERROR("Timed out waiting for a response on line 3.\n");
+			else continue; // Timed out waiting for a response on line 3.
 		}
 
 		if(!line4UpToDate){
 			sendPacket(31, 0, 3, line4);
 			if(waitForAck()) line4UpToDate = true;
-			else ROS_ERROR("Timed out waiting for a response on line 4.\n");
+			else continue; // Timed out waiting for a response on line 4.
 		}
 		
 		
@@ -424,7 +436,7 @@ int main(int argc, char **argv){
 			sendPacket(34, 11, (int)(led1.g*100)); // green led 1
 			bool timed_out2 = !waitForAck();			
 			
-			if (timed_out1 || timed_out2) ROS_ERROR("Timed out waiting for a response for led 1.\n");
+			if (timed_out1 || timed_out2) continue; // Timed out waiting for a response for led 1.
 			else led1UpToDate = true;
 		}
 		
@@ -435,7 +447,7 @@ int main(int argc, char **argv){
 			sendPacket(34, 9, (int)(led2.g*100)); // green led 2
 			bool timed_out2 = !waitForAck();
 			
-			if (timed_out1 || timed_out2) ROS_ERROR("Timed out waiting for a response for led 2.\n");
+			if (timed_out1 || timed_out2) continue; // Timed out waiting for a response for led 2.
 			else led2UpToDate = true;
 		}
 		
@@ -446,7 +458,7 @@ int main(int argc, char **argv){
 			sendPacket(34, 7, (int)(led3.g*100)); // green led 3
 			bool timed_out2 = !waitForAck();
 			
-			if (timed_out1 || timed_out2) ROS_ERROR("Timed out waiting for a response for led 3.\n");
+			if (timed_out1 || timed_out2) continue; // Timed out waiting for a response for led 3.
 			else led3UpToDate = true;
 		}
 		
@@ -457,7 +469,7 @@ int main(int argc, char **argv){
 			sendPacket(34, 5, (int)(led4.g*100)); // green led 4
 			bool timed_out2 = !waitForAck();
 			
-			if (timed_out1 || timed_out2) ROS_ERROR("Timed out waiting for a response for led 4.\n");
+			if (timed_out1 || timed_out2) continue; // Timed out waiting for a response for led 4.
 			else led4UpToDate = true;
 		}
 		
@@ -467,8 +479,9 @@ int main(int argc, char **argv){
 				std_msgs::Int8 keyActivity;
 				keyActivity.data = getReceivedKeyActivity();
 				pubKeyActivity.publish(keyActivity);
+			} else {
+				ROS_ERROR("Received non key activity packet. Type: %i", incoming_command.command);
 			}
-			
 			showReceivedPacket();
 		}
 

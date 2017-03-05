@@ -48,6 +48,16 @@ enum MenuState {
 	RUNNING_SCRIPT
 };
 
+enum DISPLAY_CHARS {
+	KEYS_CHAR 			= '(',
+	RIGHT_ARROW_CHAR 	= 16,
+	LEFT_ARROW_CHAR 	= 17,
+	UP_ARROW_CHAR 		= 26,
+	DOWN_ARROW_CHAR 	= 27,
+	ENTER_CHAR 			= 141,
+	EXIT_CHAR			= 120
+};
+
 MenuState menuState = DISABLED;
 pid_t currentScriptPid = -1;
 
@@ -60,6 +70,86 @@ ros::Publisher pubLed1;
 ros::Publisher pubLed2;
 ros::Publisher pubLed3;
 ros::Publisher pubLed4;
+
+
+
+
+void expandFolder(tree<path> folderTree, tree<path>::iterator folderNode){
+	
+	try {
+		path p(*folderNode);
+		
+		if (exists(p)) {
+			if (is_directory(p)) {
+				for(auto& entry : boost::make_iterator_range(directory_iterator(p), {})){
+					path entryPath = entry.path();//.string();
+					
+					if (is_regular_file(entry)){
+						if(entry.path().extension() == ".sh") {
+							tree<path>::iterator folderChild = folderTree.append_child(folderNode, entryPath);
+						}
+					} else {
+						tree<path>::iterator folderChild = folderTree.append_child(folderNode, entryPath);
+						expandFolder(folderTree, folderChild);
+					}
+				}
+			}
+		}
+		
+	} catch (const filesystem_error& ex) {
+		ROS_ERROR("%s", ex.what());
+	}
+	
+}
+
+
+void print_tree(const tree<path>& tr, tree<path>::pre_order_iterator it, tree<path>::pre_order_iterator end){
+	if(!tr.is_valid(it)) return;
+	int rootdepth=tr.depth(it);
+	std::cout << "-----" << std::endl;
+	while(it!=end) {
+		for(int i=0; i<tr.depth(it)-rootdepth; ++i) std::cout << "  ";
+		std::cout << (*it) << std::endl << std::flush;
+		++it;
+	}
+	std::cout << "-----" << std::endl;
+}
+
+bool has_parent(tree<path>::iterator folderNode){
+	tree<path>::iterator parent = folderTree.parent(folderNode);
+	return parent != folderTree.begin();
+}
+
+bool has_prev_sibling(tree<path>::iterator folderNode){
+	tree<path>::sibling_iterator siblings = folderNode;
+	return --siblings != siblings.end();
+}
+
+bool has_next_sibling(tree<path>::iterator folderNode){
+	tree<path>::sibling_iterator siblings = folderNode;
+	return ++siblings != siblings.end();
+}
+
+bool has_children(tree<path>::iterator folderNode){
+	return folderNode != folderTree.end() && folderTree.begin(folderNode) != folderTree.end(folderNode);
+}
+
+
+string formatLineEntry(tree<path>::iterator folderNode){
+	string s = folderNode->stem().string();
+	s.resize(20, ' ');
+	
+	s[15] = KEYS_CHAR;
+	s[16] = has_parent(selectedEntry)?LEFT_ARROW_CHAR:' ';
+	s[17] = has_prev_sibling(selectedEntry)?UP_ARROW_CHAR:' ';
+	s[18] = has_next_sibling(selectedEntry)?DOWN_ARROW_CHAR:' ';
+	s[19] = has_children(selectedEntry)?RIGHT_ARROW_CHAR:(is_regular_file(*selectedEntry)?ENTER_CHAR:' ');
+	
+	ROS_INFO("formatLineEntry: \t[%s]", s.c_str());
+	
+	return s;
+}
+
 
 void keyActivityCallback(const std_msgs::Int8::ConstPtr& msg){
 	
@@ -78,7 +168,7 @@ void keyActivityCallback(const std_msgs::Int8::ConstPtr& msg){
 			ROS_INFO("Menu enabled");
 			ROS_INFO("current entry:\t\t%s", (*selectedEntry).c_str());
 			currentScriptPid = -1;
-			line4.data = (*selectedEntry).stem().c_str();
+			line4.data = formatLineEntry(selectedEntry).c_str();
 			pubLine4.publish(line4);
 		}
 		break;
@@ -89,7 +179,7 @@ void keyActivityCallback(const std_msgs::Int8::ConstPtr& msg){
 			menuState = ENABLED;
 			ROS_INFO("Menu enabled");
 			ROS_INFO("current entry:\t\t%s", (*selectedEntry).c_str());
-			line4.data = (*selectedEntry).stem().c_str();
+			line4.data = formatLineEntry(selectedEntry).c_str();
 			pubLine4.publish(line4);
 		}
 		break;
@@ -104,8 +194,8 @@ void keyActivityCallback(const std_msgs::Int8::ConstPtr& msg){
 			if(--siblings != siblings.end()){
 				ROS_INFO("UP");
 				selectedEntry = siblings;
-				ROS_INFO("new entry:\t\t%s", (*selectedEntry).c_str());
-				line4.data = (*selectedEntry).stem().c_str();
+				ROS_INFO("current entry:\t\t%s %s", (*selectedEntry).c_str(), has_children(selectedEntry)?">":"·");
+				line4.data = formatLineEntry(selectedEntry).c_str();
 				pubLine4.publish(line4);
 			}
 			break;
@@ -114,8 +204,8 @@ void keyActivityCallback(const std_msgs::Int8::ConstPtr& msg){
 			if(++siblings != siblings.end()){
 				ROS_INFO("DOWN");
 				selectedEntry = siblings;
-				ROS_INFO("new entry:\t\t%s", (*selectedEntry).c_str());
-				line4.data = (*selectedEntry).stem().c_str();
+				ROS_INFO("current entry:\t\t%s %s", (*selectedEntry).c_str(), has_children(selectedEntry)?">":"·");
+				line4.data = formatLineEntry(selectedEntry).c_str();
 				pubLine4.publish(line4);
 			}
 			break;
@@ -124,8 +214,8 @@ void keyActivityCallback(const std_msgs::Int8::ConstPtr& msg){
 			if(parent != folderTree.begin()){
 				ROS_INFO("LEFT");
 				selectedEntry = parent;
-				ROS_INFO("new entry:\t\t%s", (*selectedEntry).c_str());
-				line4.data = (*selectedEntry).stem().c_str();
+				ROS_INFO("current entry:\t\t%s %s", (*selectedEntry).c_str(), has_children(selectedEntry)?">":"·");
+				line4.data = formatLineEntry(selectedEntry).c_str();
 				pubLine4.publish(line4);
 			}
 			break;
@@ -134,8 +224,8 @@ void keyActivityCallback(const std_msgs::Int8::ConstPtr& msg){
 			if(selectedEntry!=folderTree.end() && folderTree.begin(selectedEntry) != folderTree.end(selectedEntry)) {
 				ROS_INFO("RIGHT");
 				selectedEntry = folderTree.begin(selectedEntry);
-				ROS_INFO("new entry:\t\t%s", (*selectedEntry).c_str());
-				line4.data = (*selectedEntry).stem().c_str();
+				ROS_INFO("current entry:\t\t%s %s", (*selectedEntry).c_str(), has_children(selectedEntry)?">":"·");
+				line4.data = formatLineEntry(selectedEntry).c_str();
 				pubLine4.publish(line4);
 			}
 			break;
@@ -157,6 +247,9 @@ void keyActivityCallback(const std_msgs::Int8::ConstPtr& msg){
 				stringstream ssr;
 				ssr << "Running " << (*selectedEntry).stem().c_str() << "...";
 				line4.data = ssr.str();
+				line4.data.resize(20, ' ');
+				line4.data[18] = KEYS_CHAR;
+				line4.data[19] = EXIT_CHAR;
 				pubLine4.publish(line4);
 				
 				menuState = RUNNING_SCRIPT;
@@ -178,50 +271,6 @@ void keyActivityCallback(const std_msgs::Int8::ConstPtr& msg){
 		
 		break;
 	}
-}
-
-void print_tree(const tree<path>& tr, tree<path>::pre_order_iterator it, tree<path>::pre_order_iterator end){
-	if(!tr.is_valid(it)) return;
-	int rootdepth=tr.depth(it);
-	std::cout << "-----" << std::endl;
-	while(it!=end) {
-		for(int i=0; i<tr.depth(it)-rootdepth; ++i) std::cout << "  ";
-		std::cout << (*it) << std::endl << std::flush;
-		++it;
-	}
-	std::cout << "-----" << std::endl;
-}
-
-void expandFolder(tree<path> folderTree, tree<path>::iterator folderNode){
-	
-	try {
-		path p(*folderNode);
-		
-		if (exists(p)) {
-			if (is_directory(p)) {
-				for(auto& entry : boost::make_iterator_range(directory_iterator(p), {})){
-					path entryPath = entry.path();//.string();
-					
-					if (is_regular_file(entry)){
-						if(entry.path().extension() == ".sh") {
-							cout << "file:\t " << entry << endl;
-							cout << "filename extension only: " << entry.path().extension() << endl;
-							cout << "filename and extension : " << entry.path().filename() << endl;
-							cout << "filename only          : " << entry.path().stem() << endl;
-							tree<path>::iterator folderChild = folderTree.append_child(folderNode, entryPath);
-						}
-					} else {
-						tree<path>::iterator folderChild = folderTree.append_child(folderNode, entryPath);
-						expandFolder(folderTree, folderChild);
-					}
-				}
-			}
-		}
-		
-	} catch (const filesystem_error& ex) {
-		ROS_ERROR("%s", ex.what());
-	}
-	
 }
 
 
@@ -267,9 +316,14 @@ int main(int argc, char **argv) {
 		selectedEntry = folderTree.begin(selectedEntry);
 	}
 	
-	ROS_INFO("Menu disabled");
+	
+	// Sleep for a second to let pubLine4 find the subscribers 
+	ros::Duration init_sleep(1.0);
+	init_sleep.sleep();
+	
 	line4.data = "press OK for menu...";
 	pubLine4.publish(line4);
+	ROS_INFO("Menu disabled");
 	
 	ros::spin();
 	

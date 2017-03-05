@@ -1,0 +1,2 @@
+publishing and latching message. Press ctrl-C to terminate
+publishing and latching message. Press ctrl-C to terminate
