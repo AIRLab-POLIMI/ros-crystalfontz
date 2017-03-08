@@ -45,8 +45,8 @@ The driver configuration (config/driver_default.yaml) specifies the values displ
 *  init_line_x: the string displayed on line x when the node is launched
 *  red_led_x, green_led_x: the RG values to which the led are set when the node is launched (0.0 ... 1.0)
 
-The logic configuration (config/logic_default.yaml) specifies the values displayed when the crystalfontz_logic node is launched.
-*  menu_folder specifies the complete path of the folder containing the scripts.
+The logic configuration (config/logic_default.yaml).
+*  menu_folder: specifies the complete path of the folder containing the scripts.
 
 Topic contents:
 ============================================================
