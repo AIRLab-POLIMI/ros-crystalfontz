@@ -63,32 +63,36 @@ The payload of messages published on the topics key_activity is a short int (std
 | Key activity | Value |
 | ------ | ------ |
 | KEY_UP_PRESS | 1 |
-| KEY_DOWN_PRESS	|	2 |
-| KEY_LEFT_PRESS	 | 	3  | 
-| KEY_RIGHT_PRESS	 | 	4  | 
-| KEY_ENTER_PRESS	 | 	5  | 
-| KEY_EXIT_PRESS	 | 	6  | 
-| KEY_UP_RELEASE | 		7  | 
-| KEY_DOWN_RELEASE | 	8  | 
-| KEY_LEFT_RELEASE | 	9  | 
-| KEY_RIGHT_RELEASE | 	10  | 
-| KEY_ENTER_RELEASE | 	11  | 
-| KEY_EXIT_RELEASE | 	12  | 
+| KEY_DOWN_PRESS | 2 |
+| KEY_LEFT_PRESS | 3 |
+| KEY_RIGHT_PRESS | 4 |
+| KEY_ENTER_PRESS | 5 |
+| KEY_EXIT_PRESS | 6 |
+| KEY_UP_RELEASE | 7 |
+| KEY_DOWN_RELEASE | 8 |
+| KEY_LEFT_RELEASE | 9 |
+| KEY_RIGHT_RELEASE | 10 |
+| KEY_ENTER_RELEASE | 11 |
+| KEY_EXIT_RELEASE | 12 |
 
 
 Menu structure:
 ============================================================
 The menu is used by the user to select the commands to execute. 
 It is a tree whose leaves are the available scripts. The scripts file name must end in ".sh".
-Each menu item can be a submenu or a command. Executing a command corresponds to running a script. An example of menu folder present in this package is:
+Each menu item can be a submenu or a command. Executing a command corresponds to running a script.
 
 The menu is defined by a directory structure where:
   - root directory is called "menu"
   - submenus correspond to subdirectories
   - commands correspond to script files
 
+An example of menu folder present in this package is:
+
 "example script folder/example scripts/not propagating.sh"
+
 "example script folder/example scripts/propagating.sh"
+
 "example script folder/no scripts in here/stdout.txt"
 
 NOTES: Command names are the names of the corresponding scripts, displayed without the ".sh" extension.
@@ -98,6 +102,7 @@ Keys
 ============================================================
 The keys on the side of the display are used to interact with the menu.
 Their usage is the following:
+
 | Key | Action |
 | ------ | ------ |
 | ENTER | Enters menu mode and, when a command name is onscreen runs the corresponding script. |
