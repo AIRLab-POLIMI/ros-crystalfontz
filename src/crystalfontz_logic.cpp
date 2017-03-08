@@ -49,7 +49,7 @@ enum MenuState {
 };
 
 enum DISPLAY_CHARS {
-	KEYS_CHAR 			= '(',
+	KEYS_CHAR 			= ' ',
 	RIGHT_ARROW_CHAR 	= 16,
 	LEFT_ARROW_CHAR 	= 17,
 	UP_ARROW_CHAR 		= 26,
