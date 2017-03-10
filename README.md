@@ -11,7 +11,7 @@ catkin_make
 ```
 * Enter the directory of the ros-crystalfontz package and execute
 ```
-./bash/install.sh
+sudo ./bash/install.sh
 ```
 The last step creates a udev rule that assigns a predefined name (namely, "crystalfontz") to the CFA-635 every time it is connected to the machine. Precisely, the install.sh script creates a file named */etc/udev/rules.d/99-crystalfontz.rules* containing
 ```
