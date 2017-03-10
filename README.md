@@ -162,7 +162,7 @@ Running and terminating scripts via the menu system
 As already explained, scripts can be run via the menu system by pressing the "ENTER" key of the onboard keypad of CFA-635 when the script name is shown on Line 4 of the display.
 
 While the script is running:
-  1. the menu system shows "Running <name_of_the_script>..." on Line 4
+  1. the menu system shows "*Running name_of_script...*" on Line 4
   2. the menu system does not update Line 4 any more until the script terminates
   3. the only active key is "EXIT": if the user presses it, the script gets terminated by the menu system and the menu returns to the last displayed entry
 
