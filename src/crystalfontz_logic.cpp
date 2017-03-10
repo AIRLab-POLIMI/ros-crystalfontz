@@ -261,7 +261,7 @@ void keyActivityCallback(const std_msgs::Int8::ConstPtr& msg){
 		case KEY_EXIT_RELEASE:
 			ROS_INFO("EXIT");
 			ROS_INFO("Menu disabled");
-			line4.data = "press OK for menu...";
+			line4.data = "press ENTER for menu";
 			pubLine4.publish(line4);
 			menuState = DISABLED;
 		
@@ -321,7 +321,7 @@ int main(int argc, char **argv) {
 	ros::Duration init_sleep(1.0);
 	init_sleep.sleep();
 	
-	line4.data = "press OK for menu...";
+	line4.data = "press ENTER for menu";
 	pubLine4.publish(line4);
 	ROS_INFO("Menu disabled");
 	
