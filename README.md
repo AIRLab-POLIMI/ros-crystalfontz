@@ -1,8 +1,8 @@
 # ros-crystalfontz
-ROS driver and menu system for CFA-635 crystalfontz displays
+ROS driver and menu system for Crystalfontz CFA-635 display with onboard keypad
 
 
-Installation:
+Package installation
 ============================================================
 * Clone the package into your catkin workspace
 * Compile the package with
@@ -13,29 +13,30 @@ catkin_make
 ```
 ./bash/install.sh
 ```
-The last step creates a udev rule that assigns a predefined name (namely, "crystalfontz") to the display every time it is connected to the machine. Precisely, the install.sh script creates a file named */etc/udev/rules.d/99-crystalfontz.rules* containing
+The last step creates a udev rule that assigns a predefined name (namely, "crystalfontz") to the CFA-635 every time it is connected to the machine. Precisely, the install.sh script creates a file named */etc/udev/rules.d/99-crystalfontz.rules* containing
 ```
 SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="fc0d", SYMLINK+="crystalfontz", MODE="0666"
 ```
 
 
-Generalities:
+Package contents
 ============================================================
-The crystalfontz ROS package has been developed at the Artificial Intelligence and Robotics Lab of Politecnico di Milano university (http://airlab.ws.dei.polimi.it/index.php/AIRWiki).
+ros-crystalfontz is a software package for ROS (http://www.ros.org) developed by the Artificial Intelligence and Robotics Lab of Politecnico di Milano university (http://airlab.ws.dei.polimi.it/index.php/AIRWiki).
+
 The key components of the ros-crystalfontz package are the following ROS nodes:
 
-** crystalfontz-driver **
-Provides an interface between ROS-based software and a Crystalfontz display, based on the use of ROS topics. More specifically, crystalfontz-driver enables the programmer to use all the functionalities of the CFA-635 simply by publishing or reading messages on topics, thus completely removing the need to know and use the communication protocols.
+**crystalfontz-driver**
+Provides an interface between ROS-based software and a Crystalfontz display based on the use of ROS topics. It enables the programmer to use all the functionalities of the CFA-635 by publishing and reading messages on topics, removing the need to know and use the communication protocols.
 
-** crystalfontz-logic **
-Provides a menu-based system to run scripts using the keypad of the Crystalfontz display. An arbitrarily complex tree of submenus can be easily defined, simply by storing the scripts into a subdirectory tree having the same structure. Submenu names correspond to directory names in the tree.
+**crystalfontz-logic**
+Provides a menu system to run scripts using the keypad of the Crystalfontz display. An arbitrarily complex tree of submenus can be easily defined.
 
-The crystalfontz ROS package includes three ROS nodes:
-  1. crystalfontz_driver (run with *roslaunch crystalfontz driver.launch*) 
-  2. crystalfontz_logic (run with *roslaunch crystalfontz logic.launch*)
-  3. crystalfontz_logic_test (a test node, run with *rosrun crystalfontz test*)
+The package includes launchfiles for these nodes (files *"driver.launch"* and *"logic.launch"* in subdirectory *"launch"*). For instance, node crystalfontz_driver can be run with
+```
+roslaunch crystalfontz driver.launch
+```
 
-While crystalfontz_driver is necessary to interface the display with a ROS system, crystalfontz_logic is only needed if the programmer wants to implement a menu-based system to run scripts.
+Running crystalfontz_driver is always necessary to interface the display with a ROS system. Running crystalfontz_logic is only needed if the programmer needs the menu system. crystalfontz_logic requires that crystalfontz_driver is running to operate.
 
 The crystalfontz_driver ROS node does the following:
   1. subscribes to ROS topics */crystalfontz/line_1*, */crystalfontz/line_2*, */crystalfontz/line_3*, */crystalfontz/line_4* and displays their contents on lines 1...4 (respectively) of the display
@@ -47,39 +48,51 @@ The crystalfontz_driver ROS node does the following:
 The crystalfontz_logic ROS node does the following:
   1. publishes menu-related messages on ROS topic */crystalfontz/line_4*
   2. reads button state changes from ROS topic */crystalfontz/key_activity*
-  3. manages an onscreen menu system that the user can interact with using the onboard keypad: through this system the user can run bash scripts
+  3. manages an onscreen menu system that the user can interact with using the onboard keypad: through this system the user can run and terminate bash scripts (scripts accessible can in turn be used to run any other command)
 
-Bash scripts accessible via the menu system can in turn be used to run any other command. 
-
-After a script has been run via the keypad, it can be killed via the keypad as well (if needed). Script behavior when the user kills it via the keypad can vary. Two types of scripts, with different behaviors, have been provided as examples in this package:
-* "propagating scripts" that, when they are killed via the keypad, also kill all their children processes (i.e. processes run by the script)
-* "non-propagating scripts" that, when they are killed via the keypad, do not kill all their children processes (i.e. processes run by the script)
-Users of crystalfontz_logic are of course free to define other types of script.
-
-The crystalfontz_logic_test ROS node is a simple test node that can be used to check the crystalfontz package. This node shows test texts on the four lines of the display and applies random intensity values to the LEDs.
+The crystalfontz ROS package also includes a test node (*crystalfontz_logic_test*) useful to test the capabilities of the package. The node shows test texts on the four lines of the display and applies random intensity values to the LEDs. It can be run with
+```
+rosrun crystalfontz test
+```
 
 
-Configuration:
+Device management
+============================================================
+The CFA-635 display includes: 
+* 4 Lines of 20 characters each (called Line 1 -top- to Line 4 -bottom- in the following)
+* 4 RG LEDS (where the intensity of the Red and Green components can be adjusted separately)
+* a 6-key keypad (a 4-way keypad plus ENTER and EXIT keys)
+The crystalfontz_driver ROS node provides full control over all these elements via ROS topics. See section "Topics" for a description of the syntax and semantics of the messages published on the topics.
+
+A special case occurs when the crystalfontz_logic ROS node is running as well. This node, in fact, uses some of the hardware resources of the CFA-635 display: therefore such resources should not be used by other ROS nodes to avoid conflicts.
+The resources used by crystalfontz_logic ROS node are:
+* Line 4 of the display, which is used to show messages to the user
+* the 6-key keypad, which is used to get input from the user
+
+Lines 1, 2 and 3 of the CFA-635 display (and also Line 4 if crystalfontz_logic is not running) are free for usage by any ROS node. The programmer is responsible for avoiding conflicts among messages generated by different ROS nodes. It is possible for multiple nodes to *share* a Line without having to synchronize message publication, provided that each node uses a different subset of 20 characters composing the Line: see section "Topics" for additional explanations.
+
+
+Package configuration
 ============================================================
 The crystalfontz package contains two configuration files:
-*  config/driver_default.yaml
-*  config/logic_default.yaml
+*  **config/driver_default.yaml**, for node crystalfontz_driver
+*  **config/logic_default.yaml**, for node crystalfontz_logic
 
-config/driver_default.yaml specifies the initial configuration of the CFA-635 device used when the crystalfontz_driver node is launched. Precisely, 
-*  contrast: contrast value applied to the display (0 ... 254)
-*  backlight_power: backlight intensity applied to the display (0 ... 100)
-*  init_line_1...4: string displayed on lines 1...4
-*  red_led_1...4: intensity of the red component for each of four onboard LEDS (0.0 ... 1.0)
-*  green_led_1...4: intensity of the green component for each of the four onboard LEDS (0.0 ... 1.0)
+The first specifies the initial configuration of the CFA-635 when the crystalfontz_driver node is launched. Precisely, it includes the following parameters:
+*  *contrast*: contrast value applied to the display (0 to 254)
+*  *backlight_power*: backlight intensity applied to the display (0 to 100)
+*  *init_line_1...4*: string displayed on lines 1...4
+*  *red_led_1...4*: intensity of the red component for each of four onboard LEDS (0.0 to 1.0)
+*  *green_led_1...4*: intensity of the green component for each of the four onboard LEDS (0.0 to 1.0)
 
-config/logic_default.yaml contains only one parameter, namely
-*  menu_folder: specifies the complete path of the folder defining the menu structure for node crystalfontz_logic (see section "Menu structure" below)
+The second defines the menu for the crystalfontz_logic node. Precisely, it includes the following parameter:
+*  *menu_folder*: path of the *menu folder* which defines menu structure and contains the executable scripts (see section "Menu structure" below)
 
 
-Topic contents:
+Topics
 ============================================================
 The payload of messages published on each of ROS topics */crystalfontz/line_1...4* is a string; messages use ROS message type *std_msgs::String*. Each character of the payload strings is displayed on the display, in the same position it appears in the string, on the display line (Line 1, ..., Line 4) corresponding to the topic name.
-Display lines are 20 character long. Message strings can be longer than 20 characters: characters after the 20th are ignored. If the string is shorter than 20 characters, subsequent characters (up to the 20th) are filled with spaces.
+Display lines of the CFA-635 are 20 character long. Message strings can be longer than 20 characters, but characters after the 20th are ignored. If the string is shorter than 20 characters, subsequent characters (up to the 20th) are filled with spaces.
 
 An important exception is **character '\t'**. If a '\t' character is present in position X in the message string, it means that the character currently displayed in position X of the display line should be left unchanged. In this way, multiple nodes can use different portions of the same Line, publishing their messages asynchronously, without interfering.
 
@@ -89,79 +102,74 @@ Messages published on ROS topic */crystalfontz/contrast* use ROS message type *s
 
 Messages published on ROS topic */crystalfontz/backlight_power* use ROS message type *std_msgs::int32*. These messages define the backlight intensity of the CFA-635 display.
 
-Messages published on ROS topic */crystalfontz/key_activity* is an 8-bit integer; messages use ROS message type *std_msgs::Int8*. Payload values correspond to PRESSED and RELEASED activities as described in the technical documentation of the Crystalfontz CFA-635 device. Possible values are listed in the following table:
+Messages published on ROS topic */crystalfontz/key_activity* is an 8-bit integer; messages use ROS message type *std_msgs::Int8*. Payload values correspond to PRESSED and RELEASED events as described in the technical documentation of the Crystalfontz CFA-635 device. Possible values for message content are listed in the following table:
 
 | Key activity | Value |
-| ------ | ------ |
-| KEY_UP_PRESS | 1 |
-| KEY_DOWN_PRESS | 2 |
-| KEY_LEFT_PRESS | 3 |
-| KEY_RIGHT_PRESS | 4 |
-| KEY_ENTER_PRESS | 5 |
-| KEY_EXIT_PRESS | 6 |
-| KEY_UP_RELEASE | 7 |
-| KEY_DOWN_RELEASE | 8 |
-| KEY_LEFT_RELEASE | 9 |
+| ------       | ------ |
+| KEY_UP_PRESS      | 1 |
+| KEY_DOWN_PRESS    | 2 |
+| KEY_LEFT_PRESS    | 3 |
+| KEY_RIGHT_PRESS   | 4 |
+| KEY_ENTER_PRESS   | 5 |
+| KEY_EXIT_PRESS    | 6 |
+| KEY_UP_RELEASE    | 7 |
+| KEY_DOWN_RELEASE  | 8 |
+| KEY_LEFT_RELEASE  | 9 |
 | KEY_RIGHT_RELEASE | 10 |
 | KEY_ENTER_RELEASE | 11 |
-| KEY_EXIT_RELEASE | 12 |
+| KEY_EXIT_RELEASE  | 12 |
 
 
-Menu structure:
+Menu structure
 ============================================================
-The menu is used by the user to select the commands to execute. Submenus with an arbitrary depth can be defined.
-Menu structure corresponds to the subdirectory structure of a **menu folder**: i.e., a directory tree where the scripts are stored. The location in the filesystem of such directory is specified by a parameter (see section "Configuration").
+As already explained, the crystalfontz_logic ROS node provides the user with a hierarchical structure to classify, select and execute bash scripts: the **menu system**. The menu system can have an arbitrarily complex structure (submenus, sub-submenus, and so on). Such structure is defined by the **menu folder**: i.e., the directory tree where the scripts are stored. The location in the filesystem of the menu folder is on of the parameters of the package (see section "Configuration" for details).
 
-The menu folder is a tree whose leaves are the available scripts. Scripts must be executable bash scripts; their filenames must end in ".sh".
-The directories and subdirectories of the menu folder define a menu that can be navigated using the keypad of the CFA-635. While navigating, at each instant one (and only one) of the items in the currently active (sub)menu is shown onscreen. Such item can be
-* the name of a submenu of the current menu item, or
-* the name of a script
-If selected, such item causes (respectively) the following:
-* the submenu becomes the currently active menu, or
-* the script is run
-Script names are displayed without the ".sh" extension.
+The scripts executable via the menu system of the crystalfontz-logic node are *all the executable bash scripts whose name ends in ".sh" which are contained into one of the subdirectories of the menu folder*.
 
-This package includes an example of menu folder, called "example script folder" (note that blank spaces are part of the directory name). The menu folder includes two subdirectories (defining submenus) called "example scripts" and "no scripts". The first contains a *non-propagating script* (see section "Generalities" for script types) called "non-propagating.sh"; the second contains a *propagating script* called "propagating.sh".
+The user can navigate through the menu system using the onboard keypad of the CFA-635. While navigating, at each instant one (and only one) item is shown on the display. The currently shown item always belongs to one of these categories:
+* the name of a submenu of the current menu
+* the name of an executable script
+Submenu names are shown verbatim; script names are displayed without the ".sh" extension.
+
+This package includes an **example menu folder**, called "example script folder" (spaces included). The example menu folder includes two subdirectories (which, as explained, define two submenus) called "example scripts" and "no scripts". The first contains a file which is not a bash script with ".sh" extension, and therefore is ignored by the menu system. The second subdirectory contains two example scripts showing different termination behaviour (see section "Running and terminating scripts via the menu system").
+
+**NOTE: blank spaces in directory and script names.**  Linux allows blank spaces in file and directory names, though they are usually avoided because they often make command line usage of such files awkward. If you can endure the awkwardness, using spaces in script and directory names in the menu folder ensures that such spaces also appear in the menu items displayed by the CFA-635, which makes them more easily understandable. Unfortunately, the CFA-635 display shows "_" (underscore) characters as "§". Therefore, the most common workaround to put something looking like a space into a file or directory name without actually using blank spaces is not a viable solution.
 
 
-Keys
+Menu usage
 ============================================================
-The keys on the side of the display are used to interact with the menu.
-Their usage is the following:
+The menu system managed by the crystalfontz-logic ROS node has two possible states: **active** and **inactive**. In both states, the menu system uses the CFA-635 display to show information to the user. All the output of the menu system is displayed on **Line 4** of the display. 
 
-| Key | Action |
-| ------ | ------ |
-| ENTER | Enters menu mode and, when a command name is onscreen runs the corresponding script. |
-| EXIT | When in menu mode, exits menu mode; When running a script, the script is terminated. |
+The fact that Line 4 of the CFA-635 display is used by the menu system means that other ROS nodes using the display should avoid using Line 4.
+
+When the menu system is inactive, Line 4 shows *"press ENTER for menu"*: in this condition, the only active key is the ENTER key. When the menu system is active, Line 4 shows the current menu item; this, as already explained, can be the name of a submenu or the name of a script.
+
+When the menu system is active, the right part of Line 4 shows icons corresponding to the active keypad keys, i.e. what keys have an effect if pressed in the current situation. Active keys depend on the item shown onscreen: for instance, if the item is a script the "ENTER" key runs it, while this key is not active if the item is a submenu. On the contrary, when the item shown onscreen is a submenu the "RIGHT" key is active and, when pressed, makes it the current menu (i.e., enters the submenu); the "RIGHT" key is not active, instead, when the onscreen item is a script. Whatever the item shown onscreen, the "LEFT" key goes up one level in the submenu hierarchy of the menu system; however, if the current menu level is the uppermost, the "LEFT" key is not active.
+
+The effect of each key (when active) is described by the following table:
+
+| Key      | Action |
+| ------   | ------ |
+| ENTER    | when the menu system is not active, activates it; if a the item currently onscreen is a script name, runs the script |
+| EXIT     | when the menu system is active, deactivates it; when the menu system is running a script, terminates the script |
 | UP, DOWN | Scroll through menu items available at current level |
-| RIGHT | if a submenu name is onscreen, enters it |
-| LEFT | goes to upper level submenu |
-
-In menu mode, active keys are shown on the right of line 4 of the display.
+| RIGHT    | when a submenu name is onscreen, enters the submenu and makes it the current menu |
+| LEFT     | when a submenu name is onscreen, goes to the upper level submenu (if available) |
 
 
-Menu behaviour when running scripts
+Running and terminating scripts via the menu system
 ============================================================
-After a script is run using the menu, the script can be terminated by the menu system by pressing X. When the user presses the X button, SIGTERM is sent to the process running the script.
-Two different kinds of bash scripts are suggested and are present in the source as examples: "example script folder/example scripts/not propagating.sh" and "example script folder/example scripts/propagating.sh".
-The former simply executes some commands and, when SIGTERM is received, the script terminates leaving the child processes alive. The latter propagates the SIGTERM to the children.
+As already explained, scripts can be run via the menu system by pressing the "ENTER" key of the onboard keypad of CFA-635 when the script name is shown on Line 4 of the display.
 
-While running scripts via the menu system:
-1. the menu system writes "Running XXX ..." on Line 4
+While the script is running:
+1. the menu system shows "Running <name_of_the_script>..." on Line 4
 2. the menu system does not update Line 4 any more until the script terminates
-3. the script should use a line different from Line 4 for its output
-4. the menu system stops terminates the script when the user presses the X key; the menu return to the last displayed entry
+3. the only active key is "EXIT": if the user presses it, the script gets terminated by the menu system and the menu returns to the last displayed entry
 
+Scripts that have been run via the menu system can also be terminated via the menu system: this is done by pressing the EXIT key on the onboard keypad. When EXIT is pressed by the user, a SIGTERM signal is sent to the process executing the script. What happens when this signal is received depends on the script itself.
 
-Display usage
-============================================================
-The display subdivided into 4 Lines of 20 characters each. Each line can be addressed separately.
+As examples of scripts behaving differently upon receipt of the SIGTERM signal, the ros-crystalfontz package includes two example scripts called *"propagating.sh"* and *"non-propagating.sh"*. Such scripts are part of the example menu folder already mentioned in section "Menu structure".
 
-Lines 1, 2 and 3 of the display are left free for usage by ROS nodes. The programmer is responsible for avoiding conflicts among messages generated by different ROS nodes. As already explained (see Topic Contents), it is possible for multiple nodes to share the same Line without conflicts (provided that nodes use different subsets of the 1-20 character range).
+"propagating.sh" is an example of script that, when it receives the SIGTERM signal, before terminating also propagates the SIGTERM signal to its child processes, requiring them to terminate as well.
 
-NOTE: Line 4 of the display is available only when crystalfontz_logic is not used.
-
-When menu mode is not active, line 4 shows "press OK for menu...".
-When menu mode is active, line 4 shows the current menu item. The right area is used to show the available navigation options, corresponding to active keys (left, right, up, down, enter amd exit).
-Options are only shown when available.
-
+"non-propagating.sh" is an example of script that, when it receives the SIGTERM signal, terminates leaving its own child processes running.
