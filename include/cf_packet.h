@@ -1,9 +1,14 @@
 //============================================================================
-// 635 Linux Demonstration Code.
-// 635_packet,h: Ultra-simple 635 command-line communications example
-// Copyright 2005, Crystalfontz America, Inc. Written by Brent A. Crosby
-// www.crystalfontz.com, brent@crystalfontz.com
+// This file is part of ros-crystalfontz
+//
+// Copyright (C) 2017 Artificial Intelligence & Robotics Laboratory
+// of Politecnico di Milano (AIRLab) <admin.airlab-deib@polimi.it>
+// Distributed under the GNU General Public License version 3.
+//
+// Special permission to use ros-crystalfontz under the conditions of a 
+// different license can be requested from the author.
 //============================================================================
+
 #define MAX_DATA_LENGTH 22
 //============================================================================
 #define MAX_COMMAND 35
