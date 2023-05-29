@@ -9,12 +9,10 @@
 // different license can be requested from the author.
 //============================================================================
 
-#include <stdio.h>
-#include <unistd.h>
 #include "typedefs.h"
 #include "serial.h"
 #include "cf_packet.h"
-#include  "ros/ros.h"
+
 //------------------------------------------------------------------------------
 word get_crc(ubyte *bufptr,word len,word seed)
   {
@@ -54,8 +52,7 @@ word get_crc(ubyte *bufptr,word len,word seed)
      0x07BC7,0x06A4E,0x058D5,0x0495C,0x03DE3,0x02C6A,0x01EF1,0x00F78};
 
   //Initial CRC value is 0x0FFFF.
-  register word
-    newCrc;
+  word newCrc;
   newCrc=seed;
   //This algorithim is based on the IrDA LAP example.
   while(len--)
@@ -76,7 +73,7 @@ COMMAND_PACKET
 // send_packet() will send set the CRC in outgoing_response and send it to
 // the host.
 //----------------------------------------------------------------------------
-void send_packet(void)
+void send_packet()
   {
   //In order to send the entire packet in one call to "write()", we
   //need to place the CRC packed against the data. If data_length
@@ -105,7 +102,7 @@ void send_packet(void)
 //----------------------------------------------------------------------------
 
 
-ubyte check_for_packet(void) {
+ubyte check_for_packet() {
 		
 	Sync_Read_Buffer();
 	ubyte i;

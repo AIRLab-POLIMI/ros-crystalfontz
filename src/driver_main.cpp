@@ -9,18 +9,22 @@
 // different license can be requested from the author.
 //============================================================================
 
-#include  <string>
+#include "node/DriverNode.hpp"
 
-int Serial_Init(const std::string& devname, int baud_rate);
-void Uninit_Serial();
-void SendByte(unsigned char datum);
-void Sync_Read_Buffer(void);
-dword BytesAvail(void);
-ubyte GetByte(void);
-dword PeekBytesAvail(void);
-void Sync_Peek_Pointer(void);
-void AcceptPeekedData(void);
-ubyte PeekByte(void);
-void SendData(unsigned char *data,int length);
-void SendString(char *data);
-//============================================================================
+#define CLEAR_CONSOLE true
+
+int main(int argc, char **argv){
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<DriverNode>();
+
+	if (Serial_Init(SERIAL_PORT, BAUD)){
+		RCLCPP_ERROR(node->get_logger(), "Can not not open port \"%s\" at \"%d\" baud.", SERIAL_PORT, BAUD);
+	} else
+		RCLCPP_INFO(node->get_logger(), "\"%s\" opened at \"%d\" baud.\n\n", SERIAL_PORT, BAUD);
+
+    rclcpp::spin(node);
+
+    Uninit_Serial();
+	
+	return 0;
+}

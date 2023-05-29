@@ -9,18 +9,30 @@
 // different license can be requested from the author.
 //============================================================================
 
-#include  <string>
+#include "node/LogicNode.hpp"
 
-int Serial_Init(const std::string& devname, int baud_rate);
-void Uninit_Serial();
-void SendByte(unsigned char datum);
-void Sync_Read_Buffer(void);
-dword BytesAvail(void);
-ubyte GetByte(void);
-dword PeekBytesAvail(void);
-void Sync_Peek_Pointer(void);
-void AcceptPeekedData(void);
-ubyte PeekByte(void);
-void SendData(unsigned char *data,int length);
-void SendString(char *data);
-//============================================================================
+using namespace std;
+
+int main(int argc, char **argv) {
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<LogicNode>();
+
+    if(!node->initialization()) {
+        return -1;
+        RCLCPP_ERROR(node->get_logger(), "Failed to initialise node");
+    }
+
+    rclcpp::spin(node);
+
+
+
+
+    // Sleep for a second to let pubLine4 find the subscribers
+//	ros::Duration init_sleep(1.0);
+//	init_sleep.sleep();
+
+//	ros::spin();
+
+	return 0;
+}
+

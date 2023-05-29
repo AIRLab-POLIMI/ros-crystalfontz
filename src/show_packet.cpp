@@ -9,15 +9,12 @@
 // different license can be requested from the author.
 //============================================================================
 
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
+#include <cstdio>
+#include <cctype>
+#include <cstring>
 #include "typedefs.h"
 #include "cf_packet.h"
 #include "show_packet.h"
-
-#include "ros/ros.h"
-
 
 //============================================================================
 const char *command_names[36] = {
@@ -67,7 +64,7 @@ const char *key_names[21] = { "KEY_NONE", "KEY_UP_PRESS", "KEY_DOWN_PRESS",
 		"KEY_LR_PRESS", "KEY_UL_RELEASE", "KEY_UR_RELEASE", "KEY_LL_RELEASE",
 		"KEY_LR_RELEASE" };
 //----------------------------------------------------------------------------
-void showReceivedPacket(void) {
+void showReceivedPacket() {
 	int i;
 	//Terminate the incoming data so C handles it well in case it is a string.
 	incoming_command.data[incoming_command.data_length] = 0;
@@ -88,7 +85,7 @@ void showReceivedPacket(void) {
 
 	//key
 	if (incoming_command.command == 0x80)
-		ROS_INFO(
+		printf(
 				"C=%d(key:%s),L=%d,D=\"%s\",CRC=0x%04X\n",
 				incoming_command.command,
 				incoming_command.data[0] <= 20 ? key_names[incoming_command.data[0]]
@@ -96,7 +93,7 @@ void showReceivedPacket(void) {
 				incoming_command.CRC.as_word);
 	else
 		//any other packet types
-		ROS_INFO(
+        printf(
 				"C=%d(%s),L=%d,D=\"%s\",CRC=0x%04X\n",
 				incoming_command.command,
 				((incoming_command.command & 0xC0) == 0xC0) ? error_names[0x3F
@@ -109,11 +106,11 @@ void showReceivedPacket(void) {
 
 
 
-bool receivedKeyActivity(void) {
+bool receivedKeyActivity() {
 	return incoming_command.command == 0x80;
 }
 
-ubyte getReceivedKeyActivity(void) {
+ubyte getReceivedKeyActivity() {
 	if(incoming_command.command == 0x80 && incoming_command.data[0] <= 20) {
 		return incoming_command.data[0];
 	} else return 0;

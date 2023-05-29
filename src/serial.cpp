@@ -9,19 +9,12 @@
 // different license can be requested from the author.
 //============================================================================
 
-#include  <stdlib.h>
 #include  <termios.h>
 #include  <unistd.h>
 #include  <fcntl.h>
-#include  <errno.h>
-#include  <ctype.h>
-#include  <stdio.h>
+#include <iostream>
 #include  "typedefs.h"
 #include  "serial.h"
-#include  "ros/ros.h"
-
-#define FALSE   0
-#define TRUE    1
 
 // com port handle
 int handle;
@@ -34,7 +27,7 @@ dword ReceiveBufferTail;
 dword ReceiveBufferTailPeek;
 
 //------------------------------------------------------------------------------
-int Serial_Init(std::string devname, int baud_rate)
+int Serial_Init(const std::string& devname, int baud_rate)
   {
   int
     brate;
@@ -60,13 +53,13 @@ int Serial_Init(std::string devname, int baud_rate)
       brate=B115200;
       break;
     default:
-      ROS_ERROR("Serial_Init:: Invalid baud rate: %d (must be 19200 or 115200)\n", baud_rate);
+      std::cerr<<"Serial_Init:: Invalid baud rate: "<<baud_rate<<" (must be 19200 or 115200)"<<std::endl;
       return(2);
   }
   //get device struct
   if(tcgetattr(handle, &term) != 0)
     {
-    ROS_ERROR("Serial_Init:: tcgetattr() failed\n");
+    std::cerr<<"Serial_Init:: tcgetattr() failed"<<std::endl;
     return(3);
     }
 
@@ -93,8 +86,8 @@ int Serial_Init(std::string devname, int baud_rate)
 
   //set new device settings
   if(tcsetattr(handle, TCSANOW, &term)  != 0)
-    {
-    ROS_ERROR("Serial_Init:: tcsetattr() failed\n");
+  {
+      std::cerr<<"Serial_Init:: tcsetattr() failed"<<std::endl;
     return(4);
     }
 
@@ -119,17 +112,15 @@ void SendByte(unsigned char datum)
   if(handle)
     {
     if((bytes_written=write(handle, &datum, 1)) != 1)
-      ROS_ERROR("SendByte(): system call \"write()\" return error.\n  Asked for %d bytes to be written, but %d bytes reported as written.\n",
-             1,(int)bytes_written);
+        std::cerr<<"SendByte(): system call write() return error."<<std::endl<<"Asked for 1 bytes to be written, but "<<bytes_written<<" bytes reported as written."<<std::endl;
     }
   else
-    ROS_ERROR("SendByte(): \"handle\" is null\n");
+      std::cerr<<"SendByte(): handle is null"<<std::endl;
   }
 //------------------------------------------------------------------------------
 void SendData(unsigned char *data,int length)
   {
   dword
-    bytes_written;
   bytes_written=0;
 
   if(handle)
@@ -140,7 +131,7 @@ void SendData(unsigned char *data,int length)
       }
     }
   else
-    ROS_ERROR("SendData(): \"handle\" is null\n");
+      std::cerr<<"SendData(): handle is null"<<std::endl;
 
   }
 //------------------------------------------------------------------------------
@@ -154,7 +145,7 @@ void SendString(char *data)
   }
 //------------------------------------------------------------------------------
 //Gets incoming data and puts it into SerialReceiveBuffer[].
-void Sync_Read_Buffer(void)
+void Sync_Read_Buffer()
   {
   ubyte
     Incoming[4096];
@@ -185,7 +176,7 @@ void Sync_Read_Buffer(void)
     }
   }
 /*---------------------------------------------------------------------------*/
-dword BytesAvail(void)
+dword BytesAvail()
   {
   //LocalReceiveBufferHead and return_value are a signed variables.
   int
@@ -203,7 +194,7 @@ dword BytesAvail(void)
   return(return_value);
   }
 /*---------------------------------------------------------------------------*/
-ubyte GetByte(void)
+ubyte GetByte()
   {
   dword
     LocalReceiveBufferTail;
@@ -239,7 +230,7 @@ ubyte GetByte(void)
   return(return_byte);
   }
 /*---------------------------------------------------------------------------*/
-dword PeekBytesAvail(void)
+dword PeekBytesAvail()
   {
   //LocalReceiveBufferHead and return_value are a signed variables.
   int
@@ -256,17 +247,17 @@ dword PeekBytesAvail(void)
   return(return_value);
   }
 /*---------------------------------------------------------------------------*/
-void Sync_Peek_Pointer(void)
+void Sync_Peek_Pointer()
   {
   ReceiveBufferTailPeek=ReceiveBufferTail;
   }
 /*---------------------------------------------------------------------------*/
-void AcceptPeekedData(void)
+void AcceptPeekedData()
   {
   ReceiveBufferTail=ReceiveBufferTailPeek;
   }
 /*---------------------------------------------------------------------------*/
-ubyte PeekByte(void)
+ubyte PeekByte()
   {
   int
     LocalReceiveBufferTailPeek;
